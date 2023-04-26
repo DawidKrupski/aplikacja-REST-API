@@ -14,4 +14,6 @@ api.patch("/contacts/:id", ContactsController.updateStatusContact);
 
 api.post("/users/signup", UsersController.userRegister);
 api.post("/users/login", UsersController.userLogin);
-api.get("/users/secret", auth, UsersController.getSecret);
+api.get("/users/logout", auth, UsersController.userLogout);
+api.get("/users/current", auth, UsersController.userCurrent);
+api.patch("/users", auth, UsersController.userSubscription);

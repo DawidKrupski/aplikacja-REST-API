@@ -13,7 +13,7 @@ const strategyOptions = {
 passport.use(
   new Strategy(strategyOptions, (payload, done) => {
     Users.findOne({ _id: payload.id })
-      .then(([user]) =>
+      .then((user) =>
         !user ? done(new Error("User not existing")) : done(null, user)
       )
       .catch(done);
@@ -21,9 +21,15 @@ passport.use(
 );
 
 export const auth = (req, res, next) => {
+  const token = req.headers.authorization?.split(" ")[1];
+
   passport.authenticate("jwt", { session: false }, (error, user) => {
     if (!user || error)
-      return res.status(401).json({ message: "Unauthorized" });
+      return res.status(401).json({ message: "Not authorized" });
+
+    if (token !== user.token)
+      return res.status(401).json({ message: "Not authorized" });
+
     req.user = user;
     next();
   })(req, res, next);

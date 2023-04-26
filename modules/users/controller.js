@@ -33,9 +33,11 @@ export const userLogin = async (req, res) => {
   const { email, password } = req.body;
 
   const user = await UsersService.emailInUse(email);
-  const isValidPassword = await validatePassword(password, user.password);
+  if (!user)
+    return res.status(401).json({ message: "Email or password is wrong" });
 
-  if (!user || !isValidPassword)
+  const isValidPassword = await validatePassword(password, user.password);
+  if (!isValidPassword)
     return res.status(401).json({ message: "Email or password is wrong" });
 
   const payload = {
@@ -44,9 +46,11 @@ export const userLogin = async (req, res) => {
   };
 
   const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" });
-  res.json({
-    status: "success",
-    code: 200,
+
+  user.token = token;
+  await user.save();
+
+  res.status(200).json({
     data: {
       token,
     },
@@ -54,13 +58,38 @@ export const userLogin = async (req, res) => {
   });
 };
 
-export const getSecret = async (req, res) => {
-  const { username } = req.user;
-  res.json({
-    status: "success",
-    code: 200,
-    data: {
-      message: `Authorization was successful: ${username}`,
+export const userLogout = async (req, res) => {
+  req.user.token = null;
+  await req.user.save();
+  res.status(204).json("No Content");
+};
+
+export const userCurrent = async (req, res) => {
+  res.status(200).json({
+    message: "Authorization was successful",
+    user: {
+      email: req.user.email,
+      subscription: req.user.subscription,
     },
   });
+};
+
+export const userSubscription = async (req, res) => {
+  const id = req.user._id;
+  const { subscription } = req.body;
+
+  const updateUserSubscription = await UsersService.subscription(id, {
+    subscription,
+  });
+
+  const validSubscriptions = ["starter", "pro", "business"];
+  const value = req.body.subscription;
+
+  if (!validSubscriptions.includes(value))
+    return res.status(404).json({ message: "Invalid subscription value" });
+
+  if (!updateUserSubscription)
+    return res.status(404).json({ message: "Not found" });
+
+  return res.status(200).json(updateUserSubscription);
 };

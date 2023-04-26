@@ -1,8 +1,32 @@
 import * as ContactsService from "./service.js";
 
 export const getAllContacts = async (req, res) => {
-  const contacts = await ContactsService.getAll();
-  return res.json({ contacts });
+  try {
+    const contacts = await ContactsService.getAll();
+
+    let filteredContacts = null;
+    let page = parseInt(req.query.page) || 1;
+    let limit = parseInt(req.query.limit) || 20;
+    let startIndex = (page - 1) * limit;
+    let endIndex = page * limit;
+
+    if (req.query.favorite === "true") {
+      filteredContacts = contacts.filter((contact) => contact.favorite);
+    }
+
+    if (req.query.favorite === "false") {
+      filteredContacts = contacts.filter((contact) => !contact.favorite);
+    }
+
+    if (req.query.page && req.query.limit) {
+      const paginatedContacts = contacts.slice(startIndex, endIndex);
+      return res.json(paginatedContacts);
+    }
+
+    return res.json(contacts);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
 };
 
 export const getContactById = async (req, res) => {
