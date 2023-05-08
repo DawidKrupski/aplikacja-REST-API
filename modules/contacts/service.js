@@ -14,3 +14,6 @@ export const updateContact = (id, contact) =>
 
 export const updateStatusContact = (id, { favorite }) =>
   Contacts.findByIdAndUpdate({ _id: id }, { favorite });
+
+export const updateSubscriptionContact = (id, { subscription }) =>
+  Contacts.findByIdAndUpdate({ _id: id }, { subscription });
