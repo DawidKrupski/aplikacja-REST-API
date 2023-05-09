@@ -17,3 +17,4 @@ api.post("/users/login", UsersController.userLogin);
 api.get("/users/logout", auth, UsersController.userLogout);
 api.get("/users/current", auth, UsersController.userCurrent);
 api.patch("/users", auth, UsersController.userSubscription);
+api.patch("/users/avatars", auth, UsersController.userAvatar);

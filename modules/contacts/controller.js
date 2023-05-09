@@ -12,10 +12,12 @@ export const getAllContacts = async (req, res) => {
 
     if (req.query.favorite === "true") {
       filteredContacts = contacts.filter((contact) => contact.favorite);
+      return res.json(filteredContacts);
     }
 
     if (req.query.favorite === "false") {
       filteredContacts = contacts.filter((contact) => !contact.favorite);
+      return res.json(filteredContacts);
     }
 
     if (req.query.page && req.query.limit) {

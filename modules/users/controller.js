@@ -1,6 +1,7 @@
 import * as UsersService from "./service.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import gravatar from "gravatar";
 
 const hashPassword = async (pwd) => {
   const salt = await bcrypt.genSalt(10);
@@ -22,11 +23,14 @@ export const userRegister = async (req, res) => {
 
   const hashedPassword = await hashPassword(password);
 
-  const user = await UsersService.register(email, hashedPassword);
+  const url = gravatar.url(email);
 
-  return res
-    .status(201)
-    .json({ email: user.email, subscription: user.subscription });
+  const user = await UsersService.register(email, hashedPassword, url);
+
+  return res.status(201).json({
+    email: user.email,
+    subscription: user.subscription,
+  });
 };
 
 export const userLogin = async (req, res) => {
@@ -68,6 +72,7 @@ export const userCurrent = async (req, res) => {
   res.status(200).json({
     message: "Authorization was successful",
     user: {
+      avatar: req.user.avatarURL,
       email: req.user.email,
       subscription: req.user.subscription,
     },
@@ -92,4 +97,19 @@ export const userSubscription = async (req, res) => {
     return res.status(404).json({ message: "Not found" });
 
   return res.status(200).json(updateUserSubscription);
+};
+
+export const userAvatar = async (req, res) => {
+  const id = req.user._id;
+
+  let { avatarURL } = req.body;
+
+  const saveAvatar = await UsersService.saveFile(id, { avatarURL });
+
+  const updatedURL = `/avatars/${id}_userAvatar.jpg`;
+  const updatedAvatar = await UsersService.avatarUpdate(id, {
+    updatedURL,
+  });
+
+  return res.status(200).json({ avatarURL: updatedURL });
 };
