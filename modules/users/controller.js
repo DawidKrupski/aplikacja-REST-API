@@ -2,6 +2,7 @@ import * as UsersService from "./service.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import gravatar from "gravatar";
+import Jimp from "jimp";
 
 const hashPassword = async (pwd) => {
   const salt = await bcrypt.genSalt(10);
@@ -100,16 +101,29 @@ export const userSubscription = async (req, res) => {
 };
 
 export const userAvatar = async (req, res) => {
+  const { avatarURL } = req.body;
   const id = req.user._id;
 
-  let { avatarURL } = req.body;
+  if (!avatarURL) {
+    return res.status(400).send("avatarURL is required in the request body");
+  }
 
-  const saveAvatar = await UsersService.saveFile(id, { avatarURL });
+  Jimp.read(avatarURL, (err, avatar) => {
+    if (err) {
+      return res.status(500).send(err);
+    }
 
-  const updatedURL = `/avatars/${id}_userAvatar.jpg`;
-  const updatedAvatar = await UsersService.avatarUpdate(id, {
-    updatedURL,
+    const avatarName = `${id}_userAvatar.jpg`;
+    const avatarDest = "./public/avatars/" + avatarName;
+
+    avatar.resize(250, 250).write(avatarDest, (err) => {
+      if (err) {
+        console.log(err);
+        return res.status(500).send(err);
+      }
+
+      const newAvatarURL = `/avatars/${id}_userAvatar.jpg`;
+      return res.send({ avatarURL: newAvatarURL });
+    });
   });
-
-  return res.status(200).json({ avatarURL: updatedURL });
 };

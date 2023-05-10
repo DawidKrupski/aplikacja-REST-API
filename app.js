@@ -1,7 +1,7 @@
 import { Router } from "express";
 import * as ContactsController from "./modules/contacts/controller.js";
 import * as UsersController from "./modules/users/controller.js";
-import { auth } from "./modules/users/middlewares.js";
+import { auth, upload } from "./modules/users/middlewares.js";
 
 export const api = Router();
 
@@ -17,4 +17,9 @@ api.post("/users/login", UsersController.userLogin);
 api.get("/users/logout", auth, UsersController.userLogout);
 api.get("/users/current", auth, UsersController.userCurrent);
 api.patch("/users", auth, UsersController.userSubscription);
-api.patch("/users/avatars", auth, UsersController.userAvatar);
+api.patch(
+  "/users/avatars",
+  auth,
+  upload.single("avatar"),
+  UsersController.userAvatar
+);

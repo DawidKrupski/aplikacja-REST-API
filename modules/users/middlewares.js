@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import passport from "passport";
+import multer from "multer";
 import { ExtractJwt, Strategy } from "passport-jwt";
 import { Users } from "./model.js";
 
@@ -34,3 +35,14 @@ export const auth = (req, res, next) => {
     next();
   })(req, res, next);
 };
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "tmp");
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${req.user._id}_avatar.jpg`);
+  },
+});
+
+export const upload = multer({ storage: storage });
