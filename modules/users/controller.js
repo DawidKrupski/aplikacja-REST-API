@@ -1,6 +1,8 @@
 import * as UsersService from "./service.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import gravatar from "gravatar";
+import Jimp from "jimp";
 
 const hashPassword = async (pwd) => {
   const salt = await bcrypt.genSalt(10);
@@ -22,11 +24,14 @@ export const userRegister = async (req, res) => {
 
   const hashedPassword = await hashPassword(password);
 
-  const user = await UsersService.register(email, hashedPassword);
+  const url = gravatar.url(email);
 
-  return res
-    .status(201)
-    .json({ email: user.email, subscription: user.subscription });
+  const user = await UsersService.register(email, hashedPassword, url);
+
+  return res.status(201).json({
+    email: user.email,
+    subscription: user.subscription,
+  });
 };
 
 export const userLogin = async (req, res) => {
@@ -68,6 +73,7 @@ export const userCurrent = async (req, res) => {
   res.status(200).json({
     message: "Authorization was successful",
     user: {
+      avatar: req.user.avatarURL,
       email: req.user.email,
       subscription: req.user.subscription,
     },
@@ -92,4 +98,32 @@ export const userSubscription = async (req, res) => {
     return res.status(404).json({ message: "Not found" });
 
   return res.status(200).json(updateUserSubscription);
+};
+
+export const userAvatar = async (req, res) => {
+  const { avatarURL } = req.body;
+  const id = req.user._id;
+
+  if (!avatarURL) {
+    return res.status(400).send("avatarURL is required in the request body");
+  }
+
+  Jimp.read(avatarURL, (err, avatar) => {
+    if (err) {
+      return res.status(500).send(err);
+    }
+
+    const avatarName = `${id}_userAvatar.jpg`;
+    const avatarDest = "./public/avatars/" + avatarName;
+
+    avatar.resize(250, 250).write(avatarDest, (err) => {
+      if (err) {
+        console.log(err);
+        return res.status(500).send(err);
+      }
+
+      const newAvatarURL = `/avatars/${id}_userAvatar.jpg`;
+      return res.send({ avatarURL: newAvatarURL });
+    });
+  });
 };
