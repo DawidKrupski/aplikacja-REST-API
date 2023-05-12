@@ -3,6 +3,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import gravatar from "gravatar";
 import Jimp from "jimp";
+import { nanoid } from "nanoid";
+import sgMail from "@sendgrid/mail";
 
 const hashPassword = async (pwd) => {
   const salt = await bcrypt.genSalt(10);
@@ -23,10 +25,24 @@ export const userRegister = async (req, res) => {
   if (isEmailExist) return res.status(409).json({ message: "Email in use" });
 
   const hashedPassword = await hashPassword(password);
+  const verificationToken = nanoid();
+  const verificationURL = `http://localhost:3000/api/users/verify/${verificationToken}`;
 
   const url = gravatar.url(email);
 
-  const user = await UsersService.register(email, hashedPassword, url);
+  const user = await UsersService.register(
+    email,
+    hashedPassword,
+    url,
+    verificationToken
+  );
+
+  const verificationEmail = await UsersService.emailConfig(
+    email,
+    verificationURL
+  );
+
+  sgMail.send(verificationEmail);
 
   return res.status(201).json({
     email: user.email,
@@ -40,6 +56,9 @@ export const userLogin = async (req, res) => {
   const user = await UsersService.emailInUse(email);
   if (!user)
     return res.status(401).json({ message: "Email or password is wrong" });
+
+  if (!user.verify)
+    return res.status(401).json({ message: "User not verified" });
 
   const isValidPassword = await validatePassword(password, user.password);
   if (!isValidPassword)
@@ -126,4 +145,42 @@ export const userAvatar = async (req, res) => {
       return res.send({ avatarURL: newAvatarURL });
     });
   });
+};
+
+export const userVerify = async (req, res) => {
+  const verificationToken = req.params.verificationToken;
+
+  const user = await UsersService.verify(verificationToken);
+
+  if (!user) return res.status(404).json({ message: "Not found" });
+
+  user.verificationToken = "null";
+  user.verify = true;
+  await user.save();
+
+  return res.status(200).json({ message: "Verification successful" });
+};
+
+export const reVerification = async (req, res) => {
+  const { email } = req.body;
+
+  const user = await UsersService.emailInUse(email);
+
+  if (!email)
+    return res.status(401).json({ message: "Missing required field email" });
+  if (!user) return res.status(401).json({ message: "User does not exist" });
+
+  const verificationURL = `http://localhost:3000/api/users/verify/${user.verificationToken}`;
+
+  if (user.verify)
+    return res
+      .status(400)
+      .json({ message: "Verification has already been passed" });
+
+  const verificationEmail = await UsersService.emailConfig(
+    email,
+    verificationURL
+  );
+  sgMail.send(verificationEmail);
+  return res.status(200).json({ message: "Verification email sent" });
 };

@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import express from "express";
+import sgMail from "@sendgrid/mail";
 import { api } from "./app.js";
 
 dotenv.config();
@@ -22,6 +23,8 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = 3000;
+
+sgMail.setApiKey(process.env.SEND_GRID_PASSWORD);
 
 app.listen(PORT, async () => {
   console.log("Connecting to database...");
