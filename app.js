@@ -23,3 +23,5 @@ api.patch(
   upload.single("avatar"),
   UsersController.userAvatar
 );
+api.get("/users/verify/:verificationToken", UsersController.userVerify);
+api.post("/users/verify", UsersController.reVerification);
